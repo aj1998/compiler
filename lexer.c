@@ -200,8 +200,13 @@ tokenInfo  getNextToken(FILE *fp)
   int state = 0;
   int i = 0;
   tokenInfo t = (tokenInfo)malloc(sizeof(token_struct));
+  int z;
+  for(z = 0;z<50;z++)
+	  t->stringValue[z] = '\0';
   char c;
   char lexeme[100];
+  for(z = 0;z<100;z++)
+  	  lexeme[z] = '\0';
   int hVal;
   int lengthID = 0;
   
