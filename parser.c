@@ -424,7 +424,12 @@ void printRecursive(parseTree curNode, FILE* fp)
 
 void printParseTree(parseTree PT, char *outfile)
 {
-    FILE *fp = fopen(outfile, "w");
+    if(PT == NULL)
+    {
+    	printf("The source file contains errors and hence parse tree cannot be printed.\n");
+    	return;
+    }
+	FILE *fp = fopen(outfile, "w");
     fprintf(fp,"lexemeCurrentNode        lineno        token        valueIfNumber        parentNodeSymbol        isLeafNode        NodeSymbol\n");
     printRecursive(PT, fp);
     /*parseTree curNode = PT;
