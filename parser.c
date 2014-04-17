@@ -13,7 +13,7 @@ SIDHARTH CHATURVEDI 2011A7PS126P
 #include <stdio.h>
 #include "parser.h"
 #include "lexerDef.h"
-#include <String.h>
+#include <string.h>
 #include <stdlib.h>
 
 char* grammarSymbols[] = {"mainFunction", "stmtsAndFunctionDefs", "functionChoice", "stmtOrFunctionDef", "stmt", "functionDef", "declarationStmt", "assignmentStmt_type1", "assignmentStmt_type2", "ifStmt", "ioStmt", "funCallStmt", "parameter_list", "type", "remainingList", "var_list", "more_ids", "leftHandSide_singleVar", "rightHandSide_type1", "leftHandSide_listVar", "rightHandSide_type2", "sizeExpression", "elsePart", "booleanExpression", "otherStmts", "inputParameterList", "var", "listVar", "arithmeticExpression", "precedenceChoice", "arithmeticTerm", "precedenceChoice2", "operator_lowPrecedence", "factor", "operator_highPrecedence", "logicalOp", "constrainedVars", "relationalOp", "matrixElement", "matrix", "rows", "row", "extraRow", "extraColumn", "remainingColElements", "MAIN", "SQO", "SQC", "END", "FUNCTION", "ASSIGNOP", "FUNID", "SEMICOLON", "ID", "INT", "REAL", "STRING", "MATRIX", "COMMA", "SIZE", "IF", "OP", "CL", "ELSE", "ENDIF", "READ", "PRINT", "PLUS", "MINUS", "MUL", "DIV", "NUM", "RNUM", "STR", "AND", "OR", "NOT", "LT", "LE", "EQ", "GT", "GE", "NE", "EPSILON"};
@@ -42,7 +42,7 @@ grammar storeGrammar(char* fileName)
     int i = 0;
     while(fgets(str,1000,fp) != NULL)
     {
-        char *str2 = strtok(str," =\n");
+        char *str2 = strtok(str," =\n\r");
         G->rules[i] = (ruleptr)calloc(1,sizeof(rule));
         G->rules[i]->lhs = (symbol_name)convert(str2);
         G->rules[i]->rhs = NULL;
@@ -52,7 +52,7 @@ grammar storeGrammar(char* fileName)
         temp2->next = G->nonTerminalLHS[G->rules[i]->lhs];
         G->nonTerminalLHS[G->rules[i]->lhs] = temp2;
 
-        str2 = strtok(NULL," =\n");
+        str2 = strtok(NULL," =\n\r");
         nodeptr temp = (nodeptr)calloc(1,sizeof(node));
         temp->sym = (symbol_name)convert(str2);
         if(temp->sym == EPSILON)
@@ -68,7 +68,7 @@ grammar storeGrammar(char* fileName)
             G->nonTerminalOccurence[temp->sym] = temp3;
         }
         G->rules[i]->rhs = temp;
-        str2 = strtok(NULL," =\n");
+        str2 = strtok(NULL," =\n\r");
         while(str2 != NULL)
         {
             temp->next = (nodeptr)calloc(1,sizeof(node));
@@ -84,7 +84,7 @@ grammar storeGrammar(char* fileName)
                 temp3->ruleNum = i;
                 G->nonTerminalOccurence[temp->sym] = temp3;
             }
-            str2 = strtok(NULL," =\n");
+            str2 = strtok(NULL," =\n\r");
         }
         i++;
     }
@@ -266,7 +266,7 @@ parseTree parseInputSourceCode(char *testcaseFile, table T, grammar G)
         if(st->head->sym == symbol)
         {
             curNode->tk = tk;
-            while(curNode->right == NULL)
+            while(curNode->right == NULL && curNode->parent != NULL)
                 curNode = curNode->parent;
             curNode = curNode->right;
             st = pop(st);
@@ -274,7 +274,10 @@ parseTree parseInputSourceCode(char *testcaseFile, table T, grammar G)
         }
         else if(st->head->sym == EPSILON)
         {
-            st = pop(st);
+        	st = pop(st);
+        	while(curNode->right == NULL)
+        		curNode = curNode->parent;
+            curNode = curNode->right;
         }
         else if(st->head->sym >= nNonTerminals)
         {
@@ -310,7 +313,7 @@ parseTree parseInputSourceCode(char *testcaseFile, table T, grammar G)
                 curNode = curNode->left;
                 curNode->tk = (tokenInfo)calloc(1,sizeof(token_struct));
                 curNode->tk->sym = n1->sym;
-                strcpy(curNode->tk->stringValue, "----");
+                //strcpy(curNode->tk->stringValue, "----");
                 st = push(n1->sym,st);
                 n1 = n1->prev;
             }
@@ -330,10 +333,15 @@ void parseError(tokenInfo tk, stack st, grammar G, table T)
     symbol_name sym = st->head->sym;
     printf("The token %s for lexeme %s does not match at line %d. The expected token/s here is/are\n",grammarSymbols[tk->sym], tk->stringValue, tk->currentLine);
     int i;
-    for(i = 0;i<nTerminals-1;i++)
+    if(sym >= nNonTerminals)
+    	printf("%s\n", grammarSymbols[sym]);
+    else
     {
-        if((*T)->array[sym][i] != -1)
-            printf("%s\n", terminals[i]);
+    	for(i = 0;i<nTerminals-1;i++)
+    	{
+    		if((*T)->array[sym][i] != -1)
+    			printf("%s\n", terminals[i]);
+    	}
     }
 }
 
@@ -416,7 +424,12 @@ void printRecursive(parseTree curNode, FILE* fp)
 
 void printParseTree(parseTree PT, char *outfile)
 {
-    FILE *fp = fopen(outfile, "w");
+    if(PT == NULL)
+    {
+    	printf("The source file contains errors and hence parse tree cannot be printed.\n");
+    	return;
+    }
+	FILE *fp = fopen(outfile, "w");
     fprintf(fp,"lexemeCurrentNode        lineno        token        valueIfNumber        parentNodeSymbol        isLeafNode        NodeSymbol\n");
     printRecursive(PT, fp);
     /*parseTree curNode = PT;
